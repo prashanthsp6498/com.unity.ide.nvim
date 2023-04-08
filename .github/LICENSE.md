@@ -1,0 +1,1 @@
+../Packages/com.unity.ide.nvim/LICENSE.md
