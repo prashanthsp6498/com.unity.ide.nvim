@@ -3,7 +3,7 @@ using System.Runtime.CompilerServices;
 
 [assembly: InternalsVisibleTo("Unity.VSCode.EditorTests")]
 
-namespace VSCodeEditor
+namespace NvimEditor
 {
     internal static class StringUtils
     {

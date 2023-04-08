@@ -11,7 +11,7 @@ using UnityEditor.Compilation;
 using UnityEngine;
 using UnityEngine.Profiling;
 
-namespace VSCodeEditor
+namespace NvimEditor
 {
     public interface IGenerator
     {
@@ -347,7 +347,7 @@ namespace VSCodeEditor
                 SyncProject(assembly, allAssetProjectParts, responseFileData);
             }
 
-            WriteVSCodeSettingsFiles();
+            WriteNvimSettingsFiles();
         }
 
         List<ResponseFileData> ParseResponseFileData(Assembly assembly)
@@ -792,17 +792,17 @@ namespace VSCodeEditor
             return ".csproj";
         }
 
-        void WriteVSCodeSettingsFiles()
+        private void WriteNvimSettingsFiles()
         {
-            var vsCodeDirectory = Path.Combine(ProjectDirectory, ".vscode");
+            var nvimDirectory = Path.Combine(ProjectDirectory, ".nvim");
 
-            if (!m_FileIOProvider.Exists(vsCodeDirectory))
-                m_FileIOProvider.CreateDirectory(vsCodeDirectory);
+            if (!m_FileIOProvider.Exists(nvimDirectory))
+                m_FileIOProvider.CreateDirectory(nvimDirectory);
 
-            var vsCodeSettingsJson = Path.Combine(vsCodeDirectory, "settings.json");
+            var nvimSetting = Path.Combine(nvimDirectory, "settings.json");
 
-            if (!m_FileIOProvider.Exists(vsCodeSettingsJson))
-                m_FileIOProvider.WriteAllText(vsCodeSettingsJson, k_SettingsJson);
+            if (!m_FileIOProvider.Exists(nvimSetting))
+                m_FileIOProvider.WriteAllText(nvimSetting, k_SettingsJson);
         }
     }
 

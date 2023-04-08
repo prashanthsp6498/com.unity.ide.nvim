@@ -4,32 +4,32 @@ using System.IO;
 using System.Linq;
 using Unity.CodeEditor;
 
-namespace VSCodeEditor
+namespace NvimEditor
 {
     public interface IDiscovery
     {
         CodeEditor.Installation[] PathCallback();
     }
 
-    public class VSCodeDiscovery : IDiscovery
+    public class NvimDiscovery : IDiscovery
     {
-        List<CodeEditor.Installation> m_Installations;
+        private List<CodeEditor.Installation> _installations;
 
         public CodeEditor.Installation[] PathCallback()
         {
-            if (m_Installations == null)
-            {
-                m_Installations = new List<CodeEditor.Installation>();
-                FindInstallationPaths();
-            }
-
-            return m_Installations.ToArray();
+            if (_installations != null)
+                return _installations.ToArray();
+            
+            _installations = new List<CodeEditor.Installation>();
+            FindInstallationPaths();
+            return _installations.ToArray();
         }
 
-        void FindInstallationPaths()
+        private void FindInstallationPaths()
         {
             string[] possiblePaths =
 #if UNITY_EDITOR_OSX
+// TODO: Need to handle for osx and windows
             {
                 "/Applications/Visual Studio Code.app",
                 "/Applications/Visual Studio Code - Insiders.app"
@@ -47,15 +47,10 @@ namespace VSCodeEditor
             };
 #else
             {
-                "/usr/bin/code",
-                "/bin/code",
-                "/usr/local/bin/code",
-                "/var/lib/flatpak/exports/bin/com.visualstudio.code",
-                "/snap/current/bin/code",
-                "/snap/bin/code"
+                "/usr/local/bin/nvim",
             };
 #endif
-            var existingPaths = possiblePaths.Where(VSCodeExists).ToList();
+            var existingPaths = possiblePaths.Where(NvimExists).ToList();
             if (!existingPaths.Any())
             {
                 return;
@@ -67,15 +62,9 @@ namespace VSCodeEditor
                 case 1:
                 {
                     var path = existingPaths.First();
-                    m_Installations = new List<CodeEditor.Installation>
+                    _installations = new List<CodeEditor.Installation>
                     {
-                        new CodeEditor.Installation
-                        {
-                            Path = path,
-                            Name = path.Contains("Insiders")
-                                ? "Visual Studio Code Insiders"
-                                : "Visual Studio Code"
-                        }
+                        new CodeEditor.Installation { Path = path, Name = "Nvim" }
                     };
                     break;
                 }
@@ -85,9 +74,9 @@ namespace VSCodeEditor
                 }
                 default:
                 {
-                    m_Installations = existingPaths.Select(path => new CodeEditor.Installation
+                    _installations = existingPaths.Select(path => new CodeEditor.Installation
                     {
-                        Name = $"Visual Studio Code Insiders ({path.Substring(lcp.Length)})",
+                        Name = $"Nvim ({path.Substring(lcp.Length)})",
                         Path = path
                     }).ToList();
 
@@ -108,7 +97,7 @@ namespace VSCodeEditor
         }
 #endif
 
-        static string GetLongestCommonPrefix(List<string> paths)
+        private static string GetLongestCommonPrefix(IReadOnlyList<string> paths)
         {
             var baseLength = paths.First().Length;
             for (var pathIndex = 1; pathIndex < paths.Count; pathIndex++)
@@ -126,7 +115,7 @@ namespace VSCodeEditor
             return paths[0].Substring(0, baseLength);
         }
 
-        static bool VSCodeExists(string path)
+        private static bool NvimExists(string path)
         {
 #if UNITY_EDITOR_OSX
             return System.IO.Directory.Exists(path);

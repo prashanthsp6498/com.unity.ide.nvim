@@ -1,4 +1,4 @@
-namespace VSCodeEditor
+namespace NvimEditor
 {
     public interface IGUIDGenerator
     {

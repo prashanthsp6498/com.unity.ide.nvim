@@ -1,6 +1,6 @@
 using System;
 
-namespace VSCodeEditor
+namespace NvimEditor
 {
     [Flags]
     public enum ProjectGenerationFlag

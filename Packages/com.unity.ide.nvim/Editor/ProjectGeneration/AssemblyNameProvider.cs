@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEditor.Compilation;
 using UnityEditor.PackageManager;
 
-namespace VSCodeEditor
+namespace NvimEditor
 {
     public interface IAssemblyNameProvider
     {

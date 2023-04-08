@@ -1,11 +1,16 @@
 {
-    "name": "Unity.VSCode.Editor",
+    "name": "Unity.Nvim.Editor",
+    "rootNamespace": "",
     "references": [],
-    "optionalUnityReferences": [],
     "includePlatforms": [
         "Editor"
     ],
     "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
     "versionDefines": [
         {
             "name": "Unity",
@@ -22,5 +27,6 @@
             "expression": "[2020.3.6f1,2021.0]",
             "define": "ROSLYN_ANALYZER_FIX"
         }
-    ]
+    ],
+    "noEngineReferences": false
 }

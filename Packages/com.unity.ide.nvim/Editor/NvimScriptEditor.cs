@@ -6,38 +6,44 @@ using UnityEditor;
 using UnityEngine;
 using Unity.CodeEditor;
 
-namespace VSCodeEditor
+namespace NvimEditor
 {
     [InitializeOnLoad]
-    public class VSCodeScriptEditor : IExternalCodeEditor
+    public class NvimScriptEditor : IExternalCodeEditor
     {
-        const string vscode_argument = "vscode_arguments";
-        const string vscode_extension = "vscode_userExtensions";
-        static readonly GUIContent k_ResetArguments = EditorGUIUtility.TrTextContent("Reset argument");
-        string m_Arguments;
+        private const string NvimArgument = "nvim_arguments";
+        private const string NvimExtension = "nvim_userExtensions";
+        private static readonly GUIContent ResetArguments =
+            EditorGUIUtility.TrTextContent("Reset argument");
 
-        IDiscovery m_Discoverability;
-        IGenerator m_ProjectGeneration;
+        private string _arguments;
 
-        static readonly string[] k_SupportedFileNames = { "code.exe", "visualstudiocode.app", "visualstudiocode-insiders.app", "vscode.app", "code.app", "code.cmd", "code-insiders.cmd", "code", "com.visualstudio.code" };
+        private readonly IDiscovery _discoverability;
+        private readonly IGenerator _projectGeneration;
 
-        static bool IsOSX => Application.platform == RuntimePlatform.OSXEditor;
+        private static readonly string[] SupportedFileNames = { "nvim" };
 
-        static string DefaultApp => EditorPrefs.GetString("kScriptsDefaultApp");
+        private static bool IsOsx => Application.platform == RuntimePlatform.OSXEditor;
 
-        static string DefaultArgument { get; } = "\"$(ProjectPath)\" -g \"$(File)\":$(Line):$(Column)";
+        private static string DefaultApp => EditorPrefs.GetString("kScriptsDefaultApp");
 
-        string Arguments
+        /*private static string DefaultArgument {DefaultArgument get; } =
+            "\"$(ProjectPath)\" -g \"$(File)\":$(Line):$(Column)";*/
+
+        private static string DefaultArgument =>
+            "--server /tmp/nvim.unity --remote {0} --remote-send ':{1}<CR>'";
+
+        private string Arguments
         {
-            get => m_Arguments ?? (m_Arguments = EditorPrefs.GetString(vscode_argument, DefaultArgument));
+            get => _arguments ??= EditorPrefs.GetString(NvimArgument, DefaultArgument);
             set
             {
-                m_Arguments = value;
-                EditorPrefs.SetString(vscode_argument, value);
+                _arguments = value;
+                EditorPrefs.SetString(NvimArgument, value);
             }
         }
 
-        static string[] defaultExtensions
+        private static string[] DefaultExtensions
         {
             get
             {
@@ -49,7 +55,7 @@ namespace VSCodeEditor
             }
         }
 
-        static string[] HandledExtensions
+        private static string[] HandledExtensions
         {
             get
             {
@@ -60,10 +66,10 @@ namespace VSCodeEditor
             }
         }
 
-        static string HandledExtensionsString
+        private static string HandledExtensionsString
         {
-            get => EditorPrefs.GetString(vscode_extension, string.Join(";", defaultExtensions));
-            set => EditorPrefs.SetString(vscode_extension, value);
+            get => EditorPrefs.GetString(NvimExtension, string.Join(";", DefaultExtensions));
+            set => EditorPrefs.SetString(NvimExtension, value);
         }
 
         public bool TryGetInstallationForPath(string editorPath, out CodeEditor.Installation installation)
@@ -71,7 +77,7 @@ namespace VSCodeEditor
             var lowerCasePath = editorPath.ToLower();
             var filename = Path.GetFileName(lowerCasePath).Replace(" ", "");
             var installations = Installations;
-            if (!k_SupportedFileNames.Contains(filename))
+            if (!SupportedFileNames.Contains(filename))
             {
                 installation = default;
                 return false;
@@ -81,7 +87,7 @@ namespace VSCodeEditor
             {
                 installation = new CodeEditor.Installation
                 {
-                    Name = "Visual Studio Code",
+                    Name = "Nvim",
                     Path = editorPath
                 };
             }
@@ -95,7 +101,7 @@ namespace VSCodeEditor
                 {
                     installation = new CodeEditor.Installation
                     {
-                        Name = "Visual Studio Code",
+                        Name = "Nvim",
                         Path = editorPath
                     };
                 }
@@ -107,7 +113,7 @@ namespace VSCodeEditor
         public void OnGUI()
         {
             Arguments = EditorGUILayout.TextField("External Script Editor Args", Arguments);
-            if (GUILayout.Button(k_ResetArguments, GUILayout.Width(120)))
+            if (GUILayout.Button(ResetArguments, GUILayout.Width(120)))
             {
                 Arguments = DefaultArgument;
             }
@@ -129,45 +135,45 @@ namespace VSCodeEditor
             HandledExtensionsString = EditorGUILayout.TextField(new GUIContent("Extensions handled: "), HandledExtensionsString);
         }
 
-        void RegenerateProjectFiles()
+        private void RegenerateProjectFiles()
         {
             var rect = EditorGUI.IndentedRect(EditorGUILayout.GetControlRect(new GUILayoutOption[] { }));
             rect.width = 252;
             if (GUI.Button(rect, "Regenerate project files"))
             {
-                m_ProjectGeneration.Sync();
+                _projectGeneration.Sync();
             }
         }
 
-        void SettingsButton(ProjectGenerationFlag preference, string guiMessage, string toolTip)
+        private void SettingsButton(ProjectGenerationFlag preference, string guiMessage, string toolTip)
         {
-            var prevValue = m_ProjectGeneration.AssemblyNameProvider.ProjectGenerationFlag.HasFlag(preference);
+            var prevValue = _projectGeneration.AssemblyNameProvider.ProjectGenerationFlag.HasFlag(preference);
             var newValue = EditorGUILayout.Toggle(new GUIContent(guiMessage, toolTip), prevValue);
             if (newValue != prevValue)
             {
-                m_ProjectGeneration.AssemblyNameProvider.ToggleProjectGeneration(preference);
+                _projectGeneration.AssemblyNameProvider.ToggleProjectGeneration(preference);
             }
         }
 
-        public void CreateIfDoesntExist()
+        public void CreateIfDoesNotExist()
         {
-            if (!m_ProjectGeneration.SolutionExists())
+            if (!_projectGeneration.SolutionExists())
             {
-                m_ProjectGeneration.Sync();
+                _projectGeneration.Sync();
             }
         }
 
         public void SyncIfNeeded(string[] addedFiles, string[] deletedFiles, string[] movedFiles, string[] movedFromFiles, string[] importedFiles)
         {
-            (m_ProjectGeneration.AssemblyNameProvider as IPackageInfoCache)?.ResetPackageInfoCache();
-            m_ProjectGeneration.SyncIfNeeded(addedFiles.Union(deletedFiles).Union(movedFiles).Union(movedFromFiles).ToList(), importedFiles);
+            (_projectGeneration.AssemblyNameProvider as IPackageInfoCache)?.ResetPackageInfoCache();
+            _projectGeneration.SyncIfNeeded(addedFiles.Union(deletedFiles).Union(movedFiles).Union(movedFromFiles).ToList(), importedFiles);
         }
 
         public void SyncAll()
         {
-            (m_ProjectGeneration.AssemblyNameProvider as IPackageInfoCache)?.ResetPackageInfoCache();
+            (_projectGeneration.AssemblyNameProvider as IPackageInfoCache)?.ResetPackageInfoCache();
             AssetDatabase.Refresh();
-            m_ProjectGeneration.Sync();
+            _projectGeneration.Sync();
         }
 
         public bool OpenProject(string path, int line, int column)
@@ -182,25 +188,26 @@ namespace VSCodeEditor
             if (column == -1)
                 column = 0;
 
-            string arguments;
-            if (Arguments != DefaultArgument)
+            var arguments = string.Format(DefaultArgument, path, line);
+            
+            /*if (Arguments != DefaultArgument)
             {
-                arguments = m_ProjectGeneration.ProjectDirectory != path
+                arguments = _projectGeneration.ProjectDirectory != path
                     ? CodeEditor.ParseArgument(Arguments, path, line, column)
-                    : m_ProjectGeneration.ProjectDirectory;
+                    : _projectGeneration.ProjectDirectory;
             }
             else
             {
-                arguments = $@"""{m_ProjectGeneration.ProjectDirectory}""";
-                if (m_ProjectGeneration.ProjectDirectory != path && path.Length != 0)
+                arguments = $@"""{_projectGeneration.ProjectDirectory}""";
+                if (_projectGeneration.ProjectDirectory != path && path.Length != 0)
                 {
                     arguments += $@" -g ""{path}"":{line}:{column}";
                 }
-            }
+            }*/
 
-            if (IsOSX)
+            if (IsOsx)
             {
-                return OpenOSX(arguments);
+                return OpenOsX(arguments);
             }
 
             var app = DefaultApp;
@@ -220,7 +227,7 @@ namespace VSCodeEditor
             return true;
         }
 
-        static bool OpenOSX(string arguments)
+        private static bool OpenOsX(string arguments)
         {
             var process = new Process
             {
@@ -236,7 +243,7 @@ namespace VSCodeEditor
             return true;
         }
 
-        static bool SupportsExtension(string path)
+        private static bool SupportsExtension(string path)
         {
             var extension = Path.GetExtension(path);
             if (string.IsNullOrEmpty(extension))
@@ -244,26 +251,27 @@ namespace VSCodeEditor
             return HandledExtensions.Contains(extension.TrimStart('.'));
         }
 
-        public CodeEditor.Installation[] Installations => m_Discoverability.PathCallback();
+        public CodeEditor.Installation[] Installations => _discoverability.PathCallback();
 
-        public VSCodeScriptEditor(IDiscovery discovery, IGenerator projectGeneration)
+        public NvimScriptEditor(IDiscovery discovery, IGenerator projectGeneration)
         {
-            m_Discoverability = discovery;
-            m_ProjectGeneration = projectGeneration;
+            _discoverability = discovery;
+            _projectGeneration = projectGeneration;
         }
 
-        static VSCodeScriptEditor()
+        static NvimScriptEditor()
         {
-            var editor = new VSCodeScriptEditor(new VSCodeDiscovery(), new ProjectGeneration(Directory.GetParent(Application.dataPath).FullName));
+            var editor = new NvimScriptEditor(
+                new NvimDiscovery(), new ProjectGeneration(Directory.GetParent(Application.dataPath)?.FullName));
             CodeEditor.Register(editor);
 
-            if (IsVSCodeInstallation(CodeEditor.CurrentEditorInstallation))
+            if (IsNvimInstallation(CodeEditor.CurrentEditorInstallation))
             {
-                editor.CreateIfDoesntExist();
+                editor.CreateIfDoesNotExist();
             }
         }
 
-        static bool IsVSCodeInstallation(string path)
+        private static bool IsNvimInstallation(string path)
         {
             if (string.IsNullOrEmpty(path))
             {
@@ -274,7 +282,7 @@ namespace VSCodeEditor
             var filename = Path
                 .GetFileName(lowerCasePath.Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar))
                 .Replace(" ", "");
-            return k_SupportedFileNames.Contains(filename);
+            return SupportedFileNames.Contains(filename);
         }
 
         public void Initialize(string editorInstallationPath) { }

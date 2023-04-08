@@ -3,7 +3,7 @@ using System.IO;
 using System.Security;
 using System.Text;
 
-namespace VSCodeEditor
+namespace NvimEditor
 {
     public interface IFileIO
     {
